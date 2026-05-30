@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIG/BUTTON — WebSerial Config</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Bricolage+Grotesque:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #16181c;
+      --bg2:    #1c1f24;
+      --panel:  #202329;
+      --line:   #33383f;
+      --line2:  #3f454d;
+      --ink:    #e8eaed;
+      --ink2:   #a4abb3;
+      --ink3:   #6b7178;
+      --amber:  #ff8a3c;
+      --amber2: #ffb066;
+      --cyan:   #4fd0e0;
+      --green:  #4caf7d;
+      --red:    #e8473f;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      padding: 32px 24px 64px;
+    }
+
+    .wrap { max-width: 580px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .kicker::before { content: ""; width: 28px; height: 1px; background: var(--amber); }
+
+    h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: clamp(40px, 10vw, 72px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin-bottom: 10px;
+    }
+    h1 span { color: var(--ink3); }
+
+    .tagline { color: var(--ink2); font-size: 13px; margin-bottom: 28px; line-height: 1.6; }
+
+    hr { border: none; border-top: 1px solid var(--line); margin: 24px 0; }
+
+    /* ── Status / alerts ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line2);
+      border-radius: 5px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--ink2);
+      margin-bottom: 14px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--ink3);
+      flex: none;
+      transition: background 0.3s;
+    }
+    .dot.ok      { background: var(--cyan); }
+    .dot.saved   { background: var(--green); }
+    .dot.err     { background: var(--red); }
+
+    .alert {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 5px;
+      font-size: 12px;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .alert.warn  { background: #2b2200; border: 1px solid #5c3d00; color: var(--amber2); }
+    .alert.error { background: #2b0c0c; border: 1px solid var(--red); color: var(--red); }
+
+    /* ── Top buttons ── */
+    .btn-row { display: flex; gap: 10px; margin-bottom: 0; }
+    .btn {
+      padding: 11px 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: var(--amber); color: #000; flex: 1; }
+    .btn-ghost   { background: var(--panel); color: var(--ink2);
+                   border: 1px solid var(--line2); }
+
+    /* ── Edit-mode header ── */
+    .edit-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin: 24px 0 14px;
+    }
+    .edit-header.visible { display: flex; }
+    .edit-label {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--amber);
+    }
+    .edit-hint { font-size: 11px; color: var(--ink3); }
+
+    /* ── Gesture cards ── */
+    .gesture-block {
+      background: var(--panel);
+      border: 1px solid var(--line2);
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .gesture-block:focus-within { border-color: var(--amber); }
+
+    .block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .block-header h2 {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .block-header .badge {
+      font-size: 10px;
+      color: var(--ink3);
+      background: var(--bg2);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+      padding: 2px 7px;
+    }
+
+    /* Type selector row */
+    .type-row { display: flex; gap: 6px; margin-bottom: 14px; }
+    .type-btn {
+      flex: 1;
+      padding: 7px 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      background: var(--bg2);
+      color: var(--ink3);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .type-btn.active {
+      background: transparent;
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+    .type-btn:hover:not(.active) { border-color: var(--line); color: var(--ink2); }
+
+    /* Target area */
+    .target-area { display: flex; flex-direction: column; gap: 8px; }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    input[type="text"], input[type="url"] {
+      flex: 1;
+      padding: 9px 11px;
+      background: var(--bg2);
+      color: var(--ink);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, input[type="url"]:focus { border-color: var(--amber); }
+
+    .inp-btn {
+      padding: 9px 12px;
+      background: var(--bg2);
+      color: var(--ink2);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .inp-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+    .field-hint { font-size: 11px; color: var(--ink3); line-height: 1.5; }
+    .field-hint a { color: var(--cyan); text-decoration: none; }
+    .field-hint a:hover { text-decoration: underline; }
+
+    /* Hotkey display */
+    .hotkey-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 11px;
+      background: var(--bg2);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+    }
+    .key-badge {
+      font-size: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line2);
+      border-radius: 3px;
+      padding: 2px 8px;
+      color: var(--ink2);
+    }
+    .hotkey-note { font-size: 11px; color: var(--ink3); margin-top: 6px; }
+
+    /* ── Save bar ── */
+    .save-bar {
+      display: none;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .save-bar.visible { display: flex; }
+    .btn-save {
+      flex: 1;
+      padding: 13px;
+      background: var(--amber);
+      color: #000;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-save.saved { background: var(--green); color: #fff; }
+    .btn-discard {
+      padding: 13px 16px;
+      background: var(--panel);
+      color: var(--ink3);
+      border: 1px solid var(--line2);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* ── Serial log ── */
+    #log {
+      margin-top: 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 11px;
+      max-height: 160px;
+      overflow-y: auto;
+      line-height: 1.8;
+    }
+    #log .rx   { color: var(--cyan); }
+    #log .tx   { color: var(--amber2); }
+    #log .info { color: var(--ink3); }
+    #log .ok   { color: var(--green); font-weight: 600; }
+    #log .err  { color: var(--red); }
+
+    /* ── Footer note ── */
+    .note {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-left: 2px solid var(--amber);
+      background: var(--bg2);
+      font-size: 12px;
+      color: var(--ink2);
+      line-height: 1.75;
+      border-radius: 0 4px 4px 0;
+    }
+    .note strong { color: var(--ink); }
+    .note code {
+      background: var(--panel);
+      border: 1px solid var(--line2);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--amber2);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">WebSerial Config</div>
+  <h1>BIG<span>/</span>BUTTON</h1>
+  <p class="tagline">
+    Configure gesture actions over USB serial.<br>
+    Hold BOOT for <strong>5 s</strong> (LED amber), then connect the <strong>UART/COM</strong> port below.
+  </p>
+
+  <hr>
+
+  <!-- Browser compat alert -->
+  <div class="alert warn" id="alert-no-serial">
+    <strong>WebSerial not available.</strong>
+    Use Chrome 89+, Edge 89+, or Firefox 130+.
+    Serve over <code>https://</code> or <code>localhost</code> — <code>file://</code> won't work.
+  </div>
+
+  <div class="status-bar">
+    <span class="dot" id="dot"></span>
+    <span id="status-text">Not connected</span>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="connect-btn" onclick="connect()">Connect to BIG/BUTTON</button>
+  <p style="color:var(--ink3);font-size:11px;margin-top:10px;line-height:1.6">
+    In the port picker, select the port labelled <strong style="color:var(--ink2)">USB-UART</strong>,
+    <strong style="color:var(--ink2)">CH340</strong>, or
+    <strong style="color:var(--ink2)">CP210x</strong> — not the HID keyboard port.
+    If the port is greyed out, close any serial monitor in VS Code first.
+  </p>
+    <button class="btn btn-ghost" id="refresh-btn" disabled onclick="refreshConfig()">↺ Refresh</button>
+  </div>
+
+  <!-- Edit header (shown after config loads) -->
+  <div class="edit-header" id="edit-header">
+    <span class="edit-label">✎ Edit configuration</span>
+    <span class="edit-hint">Change any field, then click Save</span>
+  </div>
+
+  <!-- Short press -->
+  <div class="gesture-block" id="block-s" style="display:none">
+    <div class="block-header">
+      <h2>Short Press</h2>
+      <span class="badge">tap</span>
+    </div>
+    <div class="type-row">
+      <button class="type-btn" id="s-btn-url"    onclick="setType('s','url')">Open URL</button>
+      <button class="type-btn" id="s-btn-steam"  onclick="setType('s','steam')">Steam</button>
+      <button class="type-btn" id="s-btn-app"    onclick="setType('s','app')">Launch App</button>
+      <button class="type-btn" id="s-btn-hotkey" onclick="setType('s','hotkey')">Hotkey</button>
+    </div>
+    <div class="target-area" id="s-target-area"></div>
+  </div>
+
+  <!-- Double press -->
+  <div class="gesture-block" id="block-d" style="display:none">
+    <div class="block-header">
+      <h2>Double Press</h2>
+      <span class="badge">2× tap</span>
+    </div>
+    <div class="type-row">
+      <button class="type-btn" id="d-btn-url"    onclick="setType('d','url')">Open URL</button>
+      <button class="type-btn" id="d-btn-steam"  onclick="setType('d','steam')">Steam</button>
+      <button class="type-btn" id="d-btn-app"    onclick="setType('d','app')">Launch App</button>
+      <button class="type-btn" id="d-btn-hotkey" onclick="setType('d','hotkey')">Hotkey</button>
+    </div>
+    <div class="target-area" id="d-target-area"></div>
+  </div>
+
+  <!-- Triple press -->
+  <div class="gesture-block" id="block-tr" style="display:none">
+    <div class="block-header">
+      <h2>Triple Press</h2>
+      <span class="badge">3× tap</span>
+    </div>
+    <div class="type-row">
+      <button class="type-btn" id="tr-btn-url"    onclick="setType('tr','url')">Open URL</button>
+      <button class="type-btn" id="tr-btn-steam"  onclick="setType('tr','steam')">Steam</button>
+      <button class="type-btn" id="tr-btn-app"    onclick="setType('tr','app')">Launch App</button>
+      <button class="type-btn" id="tr-btn-hotkey" onclick="setType('tr','hotkey')">Hotkey</button>
+    </div>
+    <div class="target-area" id="tr-target-area"></div>
+  </div>
+
+  <!-- Long press -->
+  <div class="gesture-block" id="block-l" style="display:none">
+    <div class="block-header">
+      <h2>Long Press</h2>
+      <span class="badge">≥ 1.5 s</span>
+    </div>
+    <div class="type-row">
+      <button class="type-btn" id="l-btn-url"    onclick="setType('l','url')">Open URL</button>
+      <button class="type-btn" id="l-btn-steam"  onclick="setType('l','steam')">Steam</button>
+      <button class="type-btn" id="l-btn-app"    onclick="setType('l','app')">Launch App</button>
+      <button class="type-btn" id="l-btn-hotkey" onclick="setType('l','hotkey')">Hotkey</button>
+    </div>
+    <div class="target-area" id="l-target-area"></div>
+  </div>
+
+  <!-- Save / discard bar -->
+  <div class="save-bar" id="save-bar">
+    <button class="btn-save" id="save-btn" onclick="saveConfig()">Save to Device</button>
+    <button class="btn-discard" onclick="exitConfig()">Exit without saving</button>
+  </div>
+
+  <!-- Serial log -->
+  <div id="log"></div>
+
+  <div class="note">
+    <strong>Requirements</strong><br>
+    Chrome 89+, Edge 89+, or Firefox 130+.
+    Serve over <code>https://</code> or <code>localhost</code>
+    (e.g. <code>python -m http.server 8000</code> or VS Code Live Server).<br>
+    Close VS Code's serial monitor before connecting — only one app can hold a serial port at a time.<br><br>
+    <strong>Browse for app</strong> — the browser can read the filename of an
+    <code>.exe</code> or <code>.lnk</code> but not its full path (browser security).
+    Filename-only works for any app in your PATH or Start menu.
+    For a full path, type it manually: <code>C:\Apps\myapp.exe</code><br><br>
+    Hold BOOT <strong>5 s</strong> → WebSerial (amber LED).
+    Hold BOOT <strong>10 s</strong> → SoftAP captive portal (cyan LED, no USB needed).
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Datalist for common Windows programs -->
+<datalist id="prog-list">
+  <option value="notepad">
+  <option value="calc">
+  <option value="mspaint">
+  <option value="explorer">
+  <option value="cmd">
+  <option value="powershell">
+  <option value="taskmgr">
+  <option value="control">
+  <option value="chrome">
+  <option value="msedge">
+  <option value="firefox">
+  <option value="code">
+  <option value="winword">
+  <option value="excel">
+  <option value="outlook">
+  <option value="teams">
+  <option value="slack">
+  <option value="discord">
+  <option value="spotify">
+  <option value="steam">
+  <option value="obs64">
+  <option value="zoom">
+</datalist>
+
+<script>
+/* ====================================================================
+   State
+   ==================================================================== */
+let port       = null;
+let writer     = null;
+let lineBuffer = '';
+
+/* Live config — mirrors what's on the device */
+const cfg = {
+  s:  { t: 'url',    v: '' },
+  d:  { t: 'app',    v: '' },
+  tr: { t: 'hotkey', v: '' },
+  l:  { t: 'hotkey', v: '' },
+};
+
+/* ====================================================================
+   Boot checks
+   ==================================================================== */
+if (!('serial' in navigator)) {
+  document.getElementById('alert-no-serial').style.display = 'block';
+  document.getElementById('connect-btn').disabled = true;
+}
+
+/* ====================================================================
+   Logging / status
+   ==================================================================== */
+function setStatus(text, state = 'idle') {
+  document.getElementById('status-text').textContent = text;
+  document.getElementById('dot').className =
+    'dot' + ({ ok: ' ok', saved: ' saved', err: ' err' }[state] || '');
+}
+
+function addLog(msg, cls = 'info') {
+  const el  = document.getElementById('log');
+  const row = document.createElement('div');
+  row.className   = cls;
+  row.textContent = `${new Date().toLocaleTimeString([], { hour12: false })}  ${msg}`;
+  el.appendChild(row);
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ====================================================================
+   Gesture card rendering
+   ==================================================================== */
+function renderTargetArea(pfx) {
+  const type = cfg[pfx].t;
+  const val  = cfg[pfx].v;
+  const area = document.getElementById(`${pfx}-target-area`);
+
+  /* Highlight active type button */
+  ['url', 'steam', 'app', 'hotkey'].forEach(t => {
+    document.getElementById(`${pfx}-btn-${t}`).className =
+      'type-btn' + (t === type ? ' active' : '');
+  });
+
+  if (type === 'url') {
+    area.innerHTML = `
+      <div class="input-row">
+        <input type="text" id="${pfx}_target" value="${escHtml(val)}"
+               placeholder="https://example.com" oninput="cfg['${pfx}'].v=this.value">
+        <button class="inp-btn" onclick="testUrl('${pfx}')" title="Test this URL / URI">Test ↗</button>
+      </div>
+      <div class="field-hint">
+        Win+R types this and hits Enter. Accepts any URI scheme:<br>
+        <code>https://example.com</code> &nbsp;·&nbsp;
+        <code>steam://rungameid/730</code> &nbsp;·&nbsp;
+        <code>spotify:playlist:37i9dQZF</code><br>
+        <span style="color:var(--ink3)">Steam App ID → right-click game in Steam
+        → <em>Manage → Add desktop shortcut</em> → check shortcut Target,
+        or read the number from <code>store.steampowered.com/app/<strong>ID</strong></code>.</span>
+      </div>`;
+  } else if (type === 'steam') {
+    area.innerHTML = `
+      <div class="input-row">
+        <input type="text" id="${pfx}_target" value="${escHtml(val)}"
+               placeholder="e.g. 1245620" inputmode="numeric"
+               oninput="cfg['${pfx}'].v=this.value.replace(/[^0-9]/g,'');this.value=cfg['${pfx}'].v">
+        <button class="inp-btn" onclick="viewOnSteam('${pfx}')">View ↗</button>
+      </div>
+      <div class="field-hint">
+        Enter the <strong>numeric App ID</strong> — not the game name.<br>
+        <span style="color:var(--red)">✗ &nbsp;<code>steam://elden ring</code></span><br>
+        <span style="color:var(--green)">✓ &nbsp;<code>1245620</code> &nbsp;← Elden Ring's App ID</span><br>
+        <br>
+        <span style="color:var(--ink3)">
+          Find yours: open the Steam store page — the number in the URL is the App ID:<br>
+          <code>store.steampowered.com/app/<strong>730</strong></code> = CS2 &nbsp;·&nbsp;
+          <code>store.steampowered.com/app/<strong>1245620</strong></code> = Elden Ring<br>
+          Or right-click a game in Steam → <em>Manage → Add desktop shortcut</em>
+          → right-click shortcut → Properties → the Target ends in the App ID.
+          Click <strong>View ↗</strong> to open the store page and confirm.
+        </span>
+      </div>`;
+  } else if (type === 'app') {
+    const hasPicker = !!window.showOpenFilePicker;
+    area.innerHTML = `
+      <div class="input-row">
+        <input type="text" id="${pfx}_target" value="${escHtml(val)}"
+               placeholder="notepad" list="prog-list"
+               oninput="cfg['${pfx}'].v=this.value">
+        ${hasPicker
+          ? `<button class="inp-btn" onclick="browseProgram('${pfx}')">Browse…</button>`
+          : ''}
+      </div>
+      <div class="field-hint">
+        App name (in PATH/Start menu) or full path like
+        <code>C:\\Program Files\\App\\app.exe</code>.<br>
+        ${hasPicker
+          ? 'Click <strong>Browse…</strong> to pick an .exe or shortcut — filename is filled in automatically.'
+          : 'Tip: most built-in apps (notepad, calc, chrome…) work by name alone.'}
+      </div>`;
+  } else {
+    /* hotkey — fixed Win+Shift+S, not user-configurable yet */
+    area.innerHTML = `
+      <div class="hotkey-display">
+        <span class="key-badge">Win</span>+
+        <span class="key-badge">Shift</span>+
+        <span class="key-badge">S</span>
+      </div>
+      <div class="hotkey-note">
+        Opens the Windows Snipping Tool overlay. To bind a custom action, choose
+        <em>Launch App</em> and run an AutoHotkey / PowerToys script instead.
+      </div>`;
+  }
+}
+
+function setType(pfx, type) {
+  cfg[pfx].t = type;
+  if (type === 'hotkey') cfg[pfx].v = '';
+  renderTargetArea(pfx);
+  /* Refocus the input for immediate typing */
+  const inp = document.getElementById(`${pfx}_target`);
+  if (inp) inp.focus();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+/* ====================================================================
+   Populate form from received config
+   ==================================================================== */
+function populateForm(incoming) {
+  ['s', 'd', 'tr', 'l'].forEach(pfx => {
+    if (!incoming[pfx]) return;
+    cfg[pfx].t = incoming[pfx].t || 'url';
+    cfg[pfx].v = incoming[pfx].v || '';
+  });
+
+  ['s', 'd', 'tr', 'l'].forEach(pfx => {
+    document.getElementById(`block-${pfx}`).style.display = 'block';
+    renderTargetArea(pfx);
+  });
+
+  document.getElementById('edit-header').classList.add('visible');
+  document.getElementById('save-bar').classList.add('visible');
+  document.getElementById('save-btn').disabled      = false;
+  document.getElementById('save-btn').textContent   = 'Save to Device';
+  document.getElementById('save-btn').className     = 'btn-save';
+  document.getElementById('refresh-btn').disabled   = false;
+}
+
+/* ====================================================================
+   File picker (Launch App)
+   ==================================================================== */
+async function browseProgram(pfx) {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'Programs & shortcuts',
+                accept: { 'application/octet-stream': ['.exe','.lnk','.bat','.cmd','.url'] } }],
+      startIn: 'desktop',
+    });
+    /* Strip extension — Win+R can launch "notepad" without ".exe" */
+    const name = handle.name.replace(/\.(exe|lnk|bat|cmd|url)$/i, '');
+    cfg[pfx].v = name;
+    const inp = document.getElementById(`${pfx}_target`);
+    if (inp) { inp.value = name; inp.focus(); }
+  } catch (e) {
+    if (e.name !== 'AbortError') addLog(`Browse error: ${e.message}`, 'err');
+  }
+}
+
+/* Open the Steam store page for the entered App ID so the user can verify it's the right game. */
+function viewOnSteam(pfx) {
+  const appid = (document.getElementById(`${pfx}_target`)?.value || '').trim();
+  window.open(appid ? `https://store.steampowered.com/app/${appid}/` : 'https://store.steampowered.com/', '_blank');
+}
+
+/* Test any URI — http/https open in new tab, other schemes (steam://, spotify://, etc.)
+   invoke the registered Windows protocol handler via the browser. */
+function testUrl(pfx) {
+  const inp = document.getElementById(`${pfx}_target`);
+  const url = (inp ? inp.value.trim() : '');
+  if (!url) return;
+  /* If it already has a scheme, use as-is; otherwise assume https */
+  window.open(/^\w[\w+\-.]*:\/\//i.test(url) ? url : 'https://' + url, '_blank');
+}
+
+/* ====================================================================
+   Serial protocol helpers
+   ==================================================================== */
+function handleLine(line) {
+  line = line.trim();
+  if (!line) return;
+  addLog(`← ${line}`, 'rx');
+
+  if (line === 'BB:READY') {
+    setStatus('Device ready — loading config…', 'ok');
+    send('BB:GET');
+
+  } else if (line.startsWith('BB:CONFIG:')) {
+    try {
+      const incoming = JSON.parse(line.slice('BB:CONFIG:'.length));
+      populateForm(incoming);
+      setStatus('Config loaded — edit and save', 'ok');
+    } catch (e) {
+      addLog(`Parse error: ${e.message}`, 'err');
+      setStatus('Could not parse config from device', 'err');
+    }
+
+  } else if (line === 'BB:OK') {
+    addLog('✓ Config saved to flash', 'ok');
+    setStatus('Saved!', 'saved');
+    const btn = document.getElementById('save-btn');
+    btn.textContent = '✓ Saved';
+    btn.className   = 'btn-save saved';
+    btn.disabled    = true;
+    /* Re-enable after 2s so user can make further changes */
+    setTimeout(() => {
+      btn.textContent = 'Save to Device';
+      btn.className   = 'btn-save';
+      btn.disabled    = false;
+      setStatus('Config loaded — edit and save', 'ok');
+    }, 2000);
+
+  } else if (line.startsWith('BB:ERR:')) {
+    addLog(`Device error: ${line.slice(7)}`, 'err');
+    setStatus('Device reported an error', 'err');
+    document.getElementById('save-btn').disabled = false;
+  }
+}
+
+async function readLoop(readable) {
+  /* Use a direct reader + TextDecoder rather than TextDecoderStream + pipeTo.
+     TextDecoderStream has inconsistent support across browsers (broken in Firefox). */
+  const reader = readable.getReader();
+  const dec    = new TextDecoder();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      lineBuffer += dec.decode(value, { stream: true });
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop();
+      lines.forEach(handleLine);
+    }
+  } catch (e) {
+    addLog(`Read error: ${e.message}`, 'err');
+    setStatus('Disconnected', 'err');
+  } finally {
+    try { reader.releaseLock(); } catch (_) {}
+  }
+}
+
+async function send(msg) {
+  if (!writer) { addLog('Not connected', 'err'); return; }
+  addLog(`→ ${msg}`, 'tx');
+  await writer.write(new TextEncoder().encode(msg + '\n'));
+}
+
+/* ====================================================================
+   Connect
+   ==================================================================== */
+async function connect() {
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+
+    writer = port.writable.getWriter();
+    setStatus('Connected — waiting for device…', 'ok');
+    addLog('Port opened at 115200 baud', 'info');
+    document.getElementById('connect-btn').disabled = true;
+
+    readLoop(port.readable);
+
+    /* In case READY was sent before we connected */
+    setTimeout(() => send('BB:GET'), 700);
+
+  } catch (e) {
+    if (e.name !== 'NotFoundError') {
+      setStatus('Connection failed', 'err');
+      addLog(`Error: ${e.message}`, 'err');
+    }
+  }
+}
+
+/* ====================================================================
+   Refresh / Save / Exit
+   ==================================================================== */
+function refreshConfig() { send('BB:GET'); }
+
+function buildJson() {
+  /* Sync any typed-but-not-oninput values (edge case) */
+  ['s', 'd', 'tr', 'l'].forEach(pfx => {
+    const inp = document.getElementById(`${pfx}_target`);
+    if (inp && cfg[pfx].t !== 'hotkey') cfg[pfx].v = inp.value;
+  });
+  return JSON.stringify({
+    s:  { t: cfg.s.t,  v: cfg.s.v  },
+    d:  { t: cfg.d.t,  v: cfg.d.v  },
+    tr: { t: cfg.tr.t, v: cfg.tr.v },
+    l:  { t: cfg.l.t,  v: cfg.l.v  },
+  });
+}
+
+async function saveConfig() {
+  document.getElementById('save-btn').disabled = true;
+  await send('BB:SET:' + buildJson());
+}
+
+async function exitConfig() {
+  await send('BB:EXIT');
+  setStatus('Exited — you can disconnect', 'idle');
+  document.getElementById('save-btn').disabled    = true;
+  document.getElementById('refresh-btn').disabled = true;
+}
+</script>
+</body>
+</html>
